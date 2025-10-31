@@ -1,5 +1,3 @@
-from django.shortcuts import render
-from rest_framework import generics
 import requests
 from rest_framework.response import Response
 from rest_framework import status
@@ -40,7 +38,7 @@ class SearchDota2(APIView):
     def post(self, request):
         id = request.data.get('id')
         id32 = int(id) - 76561197960265728
-        url = f'https://api.opendota.com/api/players/{id32}/recentMatches'
+        url = f'https://api.opendota.com/api/players/{id32}/matches'
         response = requests.get(url)
         if response.status_code == 200:
             return Response(response.json())
@@ -48,7 +46,7 @@ class SearchDota2(APIView):
             return Response({'error': 'Falha ao buscar dados do jogador.'}, status=response.status_code)
         
     def search(self, search_result):
-        return search_result.get('response', {}).get('recentMatches')
+        return search_result.get('response', {}).get('matches')
 
 class SearchRiot(APIView):
     serializer_class = SearchRiotResultSerializer
