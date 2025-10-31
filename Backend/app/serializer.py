@@ -7,9 +7,18 @@ class SearchDota2ResultSerializer(serializers.Serializer):
         id = serializers.IntegerField()
 
 class SearchRiotResultSerializer(serializers.Serializer):
-    summoner_name = serializers.CharField()
+    gameName = serializers.CharField()
+    tagLine = serializers.CharField()
     region = serializers.ChoiceField(choices=[
-        ('asia', 'Asia'),
-        ('americas', 'Americas'),
-        ('europa', 'Europa'),
+        ('asia'),
+        ('americas'),
+        ('europa'),
+    ])
+
+class SearchRiotMatchSerializer(serializers.Serializer):
+    matchId = serializers.CharField()
+    region = serializers.ChoiceField(choices=[
+        ('asia'),
+        ('americas'),
+        ('europa'),
     ])
