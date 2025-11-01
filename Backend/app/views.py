@@ -5,7 +5,7 @@ from decouple import config
 from .serializer import SearchSteamResultSerializer, SearchDota2ResultSerializer, SearchRiotResultSerializer
 from rest_framework.views import APIView
 
-API_KEY = config('STEAM_API_KEY')
+#API_KEY = config('STEAM_API_KEY')
 RIOT_API_KEY = config('RIOT_API_KEY')
 
 #Steam
@@ -51,6 +51,7 @@ class SearchDota2(APIView):
         profile = player_data.get('profile', {})
         account_id = profile.get('account_id')
         personaname = profile.get('personaname')
+        rank_tier = profile.get('rank_tier')
 
         matches_url = f'https://api.opendota.com/api/players/{id32}/matches'
         matches_response = requests.get(matches_url)
@@ -88,9 +89,11 @@ class SearchDota2(APIView):
                     "gold_per_min": player_detail.get("gold_per_min"),
                     "xp_per_min": player_detail.get("xp_per_min"),
                     "last_hits": player_detail.get("last_hits"),
+                    "neutral_kills": player_detail.get("neutral_kills"),
                     "denies": player_detail.get("denies"),
                     "level": player_detail.get("level"),
                     "net_worth": player_detail.get("net_worth"),
+                    "lane_efficiency_pct": player_detail.get("lane_efficiency_ptc"),
                 }
 
             match_detail = {
@@ -115,7 +118,8 @@ class SearchDota2(APIView):
         return {
             "profile": {
                 "account_id": account_id,
-                "personaname": personaname
+                "personaname": personaname,
+                "rank_tier": rank_tier
             },
             "matches": matches
         }
