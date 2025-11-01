@@ -29,61 +29,80 @@ function SteamSearch() {
   };
 
   return (
-    <div className="card">
-      <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: '#667eea' }}>
-        🚂 Buscar Jogador no Steam
-      </h2>
-
-      <form onSubmit={handleSubmit} className="search-form">
-        <div className="form-group">
-          <label className="form-label">Nome do Jogador:</label>
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Digite o nome do jogador..."
-            className="form-input"
-          />
+    <>
+      <div className="header">
+        <div>
+          <h1>🚂 Steam Player Search</h1>
+          <p>Find Steam players by their username</p>
         </div>
-        
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? 'Buscando...' : 'Buscar'}
-        </button>
-      </form>
+      </div>
+
+      <div className="stats-grid" style={{ gridTemplateColumns: '1fr' }}>
+        <div className="stat-card" style={{ borderLeft: '4px solid #36b8ff' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="Enter Steam username..."
+              style={{
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                backgroundColor: '#0f1629',
+                color: '#fff',
+                fontSize: '1rem'
+              }}
+            />
+            <button 
+              type="submit" 
+              disabled={loading}
+              style={{
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #2f6bff, #36e0f9)',
+                color: '#fff',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {loading ? 'Searching...' : 'Search Player'}
+            </button>
+          </form>
+        </div>
+      </div>
 
       {loading && (
-        <div className="loading">
-          <div className="spinner"></div>
-          Buscando jogador...
+        <div className="chart-box">
+          <div style={{ color: '#36b8ff', fontSize: '1.2rem' }}>
+            🔍 Searching for player...
+          </div>
         </div>
       )}
 
       {error && (
-        <div className="error">
-          {error}
+        <div className="stat-card" style={{ borderLeft: '4px solid #ff7b42' }}>
+          <h3 style={{ color: '#ff7b42' }}>Error</h3>
+          <span>{error}</span>
         </div>
       )}
 
       {result && (
-        <div className="results-container">
-          <div className="result-item">
-            <div className="result-header">
-              <h3 className="result-title">Jogador Encontrado</h3>
-            </div>
-            <div className="result-info">
-              <div className="info-item">
-                <span className="info-label">Nome do Jogador</span>
-                <span className="info-value">{result.player_name}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Steam ID</span>
-                <span className="info-value">{result.steam_id}</span>
-              </div>
-            </div>
+        <div className="insights">
+          <h2>Player Found</h2>
+          <div className="tip">
+            <span className="tip-icon">👤</span>
+            <strong>Player Name:</strong> {result.player_name}
+          </div>
+          <div className="tip">
+            <span className="tip-icon">🆔</span>
+            <strong>Steam ID:</strong> {result.steam_id}
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
