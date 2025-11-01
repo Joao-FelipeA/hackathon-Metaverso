@@ -14,11 +14,3 @@ class SearchRiotResultSerializer(serializers.Serializer):
         ('americas'),
         ('europa'),
     ])
-
-class SearchRiotMatchSerializer(serializers.Serializer):
-    matchId = serializers.CharField()
-    region = serializers.ChoiceField(choices=[
-        ('asia'),
-        ('americas'),
-        ('europa'),
-    ])

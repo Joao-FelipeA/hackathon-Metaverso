@@ -1,8 +1,9 @@
 import requests
+import time
 from rest_framework.response import Response
 from rest_framework import status
 from decouple import config
-from .serializer import SearchSteamResultSerializer, SearchDota2ResultSerializer, SearchRiotResultSerializer, SearchRiotMatchSerializer
+from .serializer import SearchSteamResultSerializer, SearchDota2ResultSerializer, SearchRiotResultSerializer
 from rest_framework.views import APIView
 
 API_KEY = config('STEAM_API_KEY')
@@ -48,6 +49,106 @@ class SearchDota2(APIView):
     def search(self, search_result):
         return search_result.get('response', {}).get('matches')
 
+class SearchMatchesRiot(APIView):
+    @staticmethod
+    def get_match_details(region, match_id):
+        match_url = f'https://{region}.api.riotgames.com/lol/match/v5/matches/{match_id}?api_key={RIOT_API_KEY}'
+        match_response = requests.get(match_url)
+
+        if match_response.status_code != 200:
+            return None
+
+        match_data = match_response.json()
+        info = match_data.get('info', {})
+        participants = info.get('participants', [])
+        gameDuration = info.get('gameDuration')
+        gameType = info.get('gameType')
+        gameVersion = info.get('gameVersion')
+
+        user_details = {}
+        for p in participants:
+            puuid = p.get("puuid")
+            time.sleep(1)
+            user_data = SearchRiotPlayer.player_detail(puuid, region)
+
+            if user_data:
+                user_details[puuid] = {
+                    "gameName": user_data.get("gameName"),
+                    "tagLine": user_data.get("tagLine")
+                }
+            else:
+                user_details[puuid] = {
+                    "gameName": "Desconhecido",
+                    "tagLine": "N/A"
+                }
+
+        result = []
+        for p in participants:
+            puuid = p.get("puuid")
+            challenges = p.get("challenges", {})
+
+            result.append({
+                "puuid": puuid,
+                "playerName": user_details[puuid]["gameName"],
+                "tagLine": user_details[puuid]["tagLine"],
+                "goldPerMinute": challenges.get("goldPerMinute"),
+                "controlWardsPlaced": p.get("controlWardsPlaced"),
+                "firstTurretKilled": int(p.get("firstTurretKilled", False)),
+                "gameEndedInSurrender": p.get("gameEndedInSurrender"),
+                "kills": p.get("kills"),
+                "deaths": p.get("deaths"),
+                "assists": p.get("assists"),
+                "championName": p.get("championName"),
+                "lane": p.get("lane"),
+                "teamPosition": p.get("teamPosition"),
+                "win": p.get("win"),
+        })
+
+        return {
+            "matchId": match_id,
+            "participants": result,
+            "gameDuration": gameDuration,
+            "gameType": gameType,
+            "gameVersion": gameVersion,
+        }
+
+    def post(self, request):
+        match_id = request.data.get('matchId')
+        region = request.data.get('region')
+
+        if not match_id or not region:
+            return Response({'error': 'Todos os campos são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        details = self.get_match_details(region, match_id)
+        if details:
+            return Response(details)
+        else:
+            return Response({'error': 'Erro ao buscar detalhes da partida.'}, status=status.HTTP_404_NOT_FOUND)
+        
+class SearchRiotPlayer(APIView):
+    @staticmethod
+    def player_detail(puuid, region):
+        user_url = f'https://{region}.api.riotgames.com/riot/account/v1/accounts/by-puuid/{puuid}?api_key={RIOT_API_KEY}'
+        user_response = requests.get(user_url)
+
+        if user_response.status_code != 200:
+            return None
+
+        return user_response.json()
+
+    def post(self, request):
+        puuid = request.data.get('puuid')
+        region = request.data.get('region')
+
+        if not puuid or not region:
+            return Response({'error': 'Todos os campos são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_data = self.player_detail(puuid, region)
+        if user_data:
+            return Response(user_data)
+        else:
+            return Response({'error': 'Erro ao buscar detalhes do jogador.'}, status=status.HTTP_404_NOT_FOUND)
+        
 class SearchRiot(APIView):
     serializer_class = SearchRiotResultSerializer
 
@@ -85,57 +186,13 @@ class SearchRiot(APIView):
 
         match_ids = match_response.json()
 
+        match_details = []
+        for match_id in match_ids:
+            details = SearchMatchesRiot.get_match_details(region, match_id)
+            if details:
+                match_details.append(details)
+
         return Response({
             "puuid": puuid,
-            "matches": match_ids
-        })
-    
-class SearchMatchesRiot(APIView):
-    serializer_class = SearchRiotMatchSerializer
-
-    def post(self, request):
-        match_id = request.data.get('matchId')
-        region = request.data.get('region')
-
-        if not match_id or not region:
-            return Response({'error': 'Todos os campos são obrigatórios.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        match_url = f'https://{region}.api.riotgames.com/lol/match/v5/matches/{match_id}?api_key={RIOT_API_KEY}'
-        match_response = requests.get(match_url)
-
-        if match_response.status_code != 200:
-            return Response(
-                {'error': 'Erro ao buscar partidas.', 'status_code': match_response.status_code},
-                status=match_response.status_code
-            )
-
-        match_ids = match_response.json()
-
-        info = match_ids.get('info', {})
-        participants = info.get('participants', [])
-        gameDuration = info.get('gameDuration', None)
-        gametype = info.get('gameType', None)
-        gameVersion = info.get('gameVersion', None)
-
-        result = []
-        for p in participants:
-            result.append({
-            "puuid": p.get("puuid"),
-            "controlWardTimeCoverageInRiverOrEnemyHalf": p.get("challenges", {}).get("controlWardTimeCoverageInRiverOrEnemyHalf"),
-            "controlWardsPlaced": p.get("controlWardsPlaced"),
-            "dodgeSkillShotsSmallWindow": p.get("challenges", {}).get("dodgeSkillShotsSmallWindow"),
-            "earliestBaron": p.get("challenges", {}).get("earliestBaron"),
-            "earliestDragonTakedown": p.get("challenges", {}).get("earliestDragonTakedown"),
-            "firstTurretKilled": 1 if p.get("firstTurretKilled") else 0,
-            "firstTurretKilledTime": p.get("challenges", {}).get("firstTurretKilledTime"),
-            "getTakedownsInAllLanesEarlyJungleAsLaner": p.get("challenges", {}).get("getTakedownsInAllLanesEarlyJungleAsLaner"),
-            "goldPerMinute": p.get("challenges", {}).get("goldPerMinute"),
-            "jungleCsBefore10Minutes": p.get("challenges", {}).get("jungleCsBefore10Minutes"),
-            })
-
-        return Response({
-            "participants": result,
-            "gameDuration": gameDuration,
-            "gametype": gametype,
-            "gameVersion": gameVersion,
+            "matches": match_details
         })
