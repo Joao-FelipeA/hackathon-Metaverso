@@ -5,7 +5,7 @@ from decouple import config
 from .serializer import SearchSteamResultSerializer, SearchDota2ResultSerializer, SearchRiotResultSerializer
 from rest_framework.views import APIView
 
-#API_KEY = config('STEAM_API_KEY')
+API_KEY = config('STEAM_API_KEY')
 RIOT_API_KEY = config('RIOT_API_KEY')
 
 #Steam
