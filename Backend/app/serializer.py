@@ -10,7 +10,7 @@ class SearchRiotResultSerializer(serializers.Serializer):
     gameName = serializers.CharField()
     tagLine = serializers.CharField()
     region = serializers.ChoiceField(choices=[
-        ('asia'),
         ('americas'),
+        ('asia'),
         ('europa'),
     ])
